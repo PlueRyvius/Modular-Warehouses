@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Module>
-  <Name value="Coop Warehouses" />
+  <Name value="Modular Warehouses + (Coop)" />
   <!-- Must be enabled on the server AND every client: Coop's validator matches it like any mod. -->
   <Id value="CoopWarehouses" />
   <Version value="v0.1.0" />

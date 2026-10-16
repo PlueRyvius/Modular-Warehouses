@@ -1,4 +1,4 @@
-# Coop Warehouses
+# Modular Warehouses + (Coop)
 
 Public, clan and kingdom warehouses in every town and castle, for Bannerlord single player and Bannerlord Coop.
 Players can store items (including horses, food and trade goods) and gold for each other.
