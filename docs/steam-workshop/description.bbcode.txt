@@ -1,0 +1,39 @@
+[h1]Modular Warehouses + (Coop)[/h1]
+
+Warehouses in every town and castle where you can leave goods and gold, for yourself or for others. Built for Bannerlord Coop, and works in single player too.
+
+[h2]Three kinds of warehouse[/h2]
+[list]
+[*][b]Public[/b]: anyone can deposit or take.
+[*][b]Clan[/b]: any member of your clan.
+[*][b]Kingdom[/b]: any member of your kingdom, in your kingdom's own towns and castles.
+[/list]
+Each settlement has its own warehouses. Nothing is shared between towns.
+
+[h2]What you can store[/h2]
+[list]
+[*]Any item: weapons, armour, horses, food and trade goods, with their quality (Fine, Masterwork...) kept.
+[*]Player-crafted weapons, including ones other players have never seen.
+[*]Gold. Stored gold is out of circulation until someone takes it out.
+[/list]
+Items use the familiar stash screen. Gold is deposited and withdrawn from the warehouse menu.
+
+[h2]Rules[/h2]
+[list]
+[*]Leave a kingdom and you lose access to its warehouses immediately.
+[*]If a kingdom loses a settlement, or is destroyed, its stash there goes into that settlement's public warehouse.
+[*]Every deposit and withdrawal is written in the warehouse ledger.
+[*]AI lords never use warehouses.
+[/list]
+
+[h2]Co-op[/h2]
+The server owns the warehouses and checks every request against what is really there, so two players cannot take the same last item and nothing can be duplicated. Install the mod on the server and on every player's game (same version everywhere).
+
+[h2]Requirements[/h2]
+[list]
+[*]Harmony
+[*]Bannerlord Coop (optional; only for multiplayer)
+[/list]
+
+[h2]Notes[/h2]
+Early version (0.1). Logs are in [i]Documents\Mount and Blade II Bannerlord\Configs\ModLogs\CoopWarehouses-*.log[/i]. Source and releases: github.com/PlueRyvius/Modular-Warehouses

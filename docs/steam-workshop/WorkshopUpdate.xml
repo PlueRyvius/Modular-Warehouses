@@ -1,0 +1,17 @@
+<Tasks>
+    <GetItem>
+        <ItemId Value="3821032491"/>
+    </GetItem>
+    <UpdateItem>
+        <ModuleFolder Value="D:\Design\Bannerlord Mods\CoopWarehouses\artifacts\CoopWarehouses"/>
+        <ChangeNotes Value="Describe this release here (mirror the GitHub release notes)." />
+        <!-- No <Image> on purpose: updates leave the preview image alone. -->
+        <Tags>
+            <Tag Value="Gameplay" />
+            <Tag Value="Native" />
+            <Tag Value="Singleplayer" />
+            <Tag Value="Multiplayer" />
+            <Tag Value="v1.4.8" />
+        </Tags>
+    </UpdateItem>
+</Tasks>
