@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>CoopWarehouses</AssemblyName>
+    <RootNamespace>CoopWarehouses</RootNamespace>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <!-- The submodule DLL. It references nothing of Coop's: the engine checks a submodule's references eagerly, so the
+         mod still loads in single player. The Coop half is loaded by hand once Coop is present. -->
+    <OutputPath>_Module\bin\Win64_Shipping_Client\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Bannerlord.ReferenceAssemblies.Core" Version="1.4.8.119303" ExcludeAssets="runtime" />
+    <PackageReference Include="Lib.Harmony" Version="2.4.2" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <Target Name="CopyServerBin" AfterTargets="Build">
+    <Copy SourceFiles="$(OutDir)$(AssemblyName).dll;$(OutDir)$(AssemblyName).pdb" DestinationFolder="_Module\bin\Win64_Shipping_Server\" SkipUnchangedFiles="true" ContinueOnError="true" />
+  </Target>
+
+</Project>

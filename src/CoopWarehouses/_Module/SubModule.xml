@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Module>
+  <Name value="Coop Warehouses" />
+  <!-- Must be enabled on the server AND every client: Coop's validator matches it like any mod. -->
+  <Id value="CoopWarehouses" />
+  <Version value="v0.1.0" />
+  <SingleplayerModule value="true" />
+  <MultiplayerModule value="false" />
+  <ModuleCategory value="Singleplayer" />
+  <ModuleType value="Community" />
+  <DependedModules>
+    <DependedModule Id="Bannerlord.Harmony" />
+    <DependedModule Id="Native" />
+    <DependedModule Id="SandBoxCore" />
+    <DependedModule Id="Sandbox" />
+  </DependedModules>
+  <DependedModuleMetadatas>
+    <DependedModuleMetadata id="Bannerlord.Harmony" order="LoadBeforeThis" />
+    <DependedModuleMetadata id="Native" order="LoadBeforeThis" />
+    <DependedModuleMetadata id="SandBoxCore" order="LoadBeforeThis" />
+    <DependedModuleMetadata id="Sandbox" order="LoadBeforeThis" />
+  </DependedModuleMetadatas>
+  <SubModules>
+    <SubModule>
+      <Name value="CoopWarehouses" />
+      <DLLName value="CoopWarehouses.dll" />
+      <SubModuleClassType value="CoopWarehouses.SubModule" />
+      <Tags />
+    </SubModule>
+  </SubModules>
+  <Xmls />
+</Module>
