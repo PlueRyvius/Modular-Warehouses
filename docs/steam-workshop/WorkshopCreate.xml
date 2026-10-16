@@ -1,0 +1,16 @@
+<Tasks>
+    <CreateItem/>
+    <UpdateItem>
+        <ModuleFolder Value="D:\Design\Bannerlord Mods\CoopWarehouses\artifacts\CoopWarehouses"/>
+        <ItemDescription Value="Public, clan and kingdom warehouses in every town and castle. Store items, horses, trade goods, crafted weapons and gold for each other. Server-authoritative Bannerlord Coop support. See the full description on the page."/>
+        <Tags>
+            <Tag Value="Gameplay" />
+            <Tag Value="Native" />
+            <Tag Value="Singleplayer" />
+            <Tag Value="Multiplayer" />
+            <Tag Value="v1.4.8" />
+        </Tags>
+        <Image Value="D:\Design\Bannerlord Mods\CoopWarehouses\artifacts\CoopWarehouses\preview.jpg"/>
+        <Visibility Value="Private"/>
+    </UpdateItem>
+</Tasks>
