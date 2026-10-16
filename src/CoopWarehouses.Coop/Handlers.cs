@@ -64,7 +64,7 @@ namespace Coop.Core.Server.Services.CoopWarehouses.Handlers
             network.Send(peer, new NetworkWarehouseReply
             {
                 Op = reply.Op, SettlementId = reply.SettlementId, Scope = reply.Scope, Ok = reply.Ok, Message = reply.Message,
-                Items = reply.Items, Gold = reply.Gold, Log = reply.Log, Seq = reply.Seq, ProtocolVersion = Protocol.Version,
+                Items = reply.Items, Gold = reply.Gold, Log = reply.Log, Designs = reply.Designs, Seq = reply.Seq, ProtocolVersion = Protocol.Version,
             });
         }
 
@@ -100,7 +100,7 @@ namespace Coop.Core.Client.Services.CoopWarehouses.Handlers
             var reply = new WireReply
             {
                 Op = m.Op, SettlementId = m.SettlementId, Scope = m.Scope, Ok = m.Ok, Message = m.Message,
-                Items = m.Items ?? new List<string>(), Gold = m.Gold, Log = m.Log ?? new List<string>(), Seq = m.Seq,
+                Items = m.Items ?? new List<string>(), Gold = m.Gold, Log = m.Log ?? new List<string>(), Designs = m.Designs ?? new List<string>(), Seq = m.Seq,
             };
             GameThread.RunSafe(() => global::CoopWarehouses.Client.OnReply(reply), false, "CoopWarehouses reply");
         }

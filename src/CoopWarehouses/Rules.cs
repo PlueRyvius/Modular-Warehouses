@@ -33,6 +33,8 @@ public sealed class WireReply
     public List<string> Items = new List<string>();
     public long Gold;
     public List<string> Log = new List<string>();
+    /// <summary>Designs of the crafted weapons among <see cref="Items"/>, so the player's game can build any it lacks.</summary>
+    public List<string> Designs = new List<string>();
     public int Seq;
 }
 
@@ -105,6 +107,7 @@ public static class Rules
         reply.Items = w.Items.Select(kv => kv.Key + "\t" + kv.Value).ToList();
         reply.Gold = w.Gold;
         reply.Log = w.Log.ToList();
+        reply.Designs = Store.DesignsFor(w).ToList();
     }
 
     private static string? Transfer(Hero hero, MobileParty party, Warehouse w, List<string> lines)
@@ -115,7 +118,10 @@ public static class Rules
         {
             var p = line.Split('\t');
             if (p.Length != 2 || !int.TryParse(p[1], out var delta) || delta == 0) return "Malformed request.";
-            if (!TryElement(p[0], out var element)) return "Unknown item " + p[0] + ".";
+            if (!TryElement(p[0], out var element))
+                return p[0].StartsWith("crafted_item", StringComparison.Ordinal)
+                    ? "The server does not know this crafted weapon (" + p[0] + ")."
+                    : "Unknown item " + p[0] + ".";
             if (!Storable(element.Item, out var why)) return why;
             if (moves.Any(m => m.Key == p[0])) return "Malformed request.";
             moves.Add((p[0], element, delta));
@@ -132,6 +138,7 @@ public static class Rules
         {
             party.ItemRoster.AddToCounts(m.Element, -m.Delta);
             w.Add(m.Key, m.Delta);
+            if (m.Delta > 0 && Crafted.Describe(m.Element.Item) is { } design) Store.Designs[m.Element.Item.StringId] = design;
             w.Note($"{day}: {hero.Name} {(m.Delta > 0 ? "deposited" : "withdrew")} {Math.Abs(m.Delta)} {Name(m.Element)}");
         }
         return null;
@@ -199,16 +206,31 @@ public static class Rules
         return true;
     }
 
-    /// <summary>Player-crafted weapons are generated per campaign and carried differently over the network; kept out for now.</summary>
+    /// <summary>
+    /// Crafted weapons are stored with their design (<see cref="Crafted"/>). One marked as player-crafted but with no
+    /// readable design could not be rebuilt on another game, so it is refused.
+    /// </summary>
     public static bool Storable(ItemObject item, out string why)
     {
         why = "";
-        if (item.IsCraftedByPlayer)
+        if (item.IsCraftedByPlayer && Crafted.Describe(item) == null)
         {
-            why = item.Name + " is a crafted weapon; warehouses do not take those yet.";
+            why = item.Name + " is a crafted weapon whose design cannot be read; the warehouse cannot take it.";
             return false;
         }
         return true;
+    }
+
+    /// <summary>After a load: rebuild any stored crafted weapon this game no longer has.</summary>
+    public static void EnsureStoredCraftedWeapons()
+    {
+        int ok = 0, failed = 0;
+        foreach (var design in Store.Designs.Values)
+        {
+            if (Crafted.Ensure(design, out var why)) ok++;
+            else { failed++; Log.Warn("stored crafted weapon not rebuilt: " + why); }
+        }
+        if (ok + failed > 0) Log.Info($"stored crafted weapons: {ok} ready, {failed} failed");
     }
 
     public static string Name(EquipmentElement e) => e.GetModifiedItemName().ToString();

@@ -34,6 +34,8 @@ public sealed class NetworkWarehouseReply : IEvent
     [ProtoMember(8)] public List<string>? Log { get; set; }
     [ProtoMember(9)] public int Seq { get; set; }
     [ProtoMember(10)] public int ProtocolVersion { get; set; }
+    /// <summary>Crafted weapon designs for the items above (Crafted.Describe lines).</summary>
+    [ProtoMember(11)] public List<string>? Designs { get; set; }
 }
 
 public static class Protocol

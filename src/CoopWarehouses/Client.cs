@@ -181,6 +181,9 @@ public static class Client
 
     private static void OpenStash(WireReply reply)
     {
+        // Crafted weapons this game has never seen: build them from the designs the warehouse sent.
+        foreach (var design in reply.Designs)
+            if (!Crafted.Ensure(design, out var why)) Log.Warn("crafted weapon not built: " + why);
         var roster = new ItemRoster();
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var line in reply.Items)
