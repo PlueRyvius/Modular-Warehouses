@@ -9,7 +9,10 @@ Players can store items (including horses, food and trade goods) and gold for ea
 - A player who leaves a kingdom loses access straight away (access is checked on every request).
 - When a settlement changes owner, or a kingdom is destroyed, that kingdom's stash goes into the settlement's public warehouse.
 - Every deposit and withdrawal is written to the warehouse's ledger (last 200 entries).
-- Stored gold is out of circulation. AI lords never use warehouses. Player-crafted weapons are refused for now.
+- Stored gold is out of circulation. AI lords never use warehouses.
+- Player-crafted weapons are stored with their design. The server sends the design along with the warehouse contents, and a
+  player's game that has never seen the weapon rebuilds it under the same id (Coop only sends item ids). The server
+  also rebuilds any stored weapon its save no longer has.
 
 ## How it works
 - `CoopWarehouses` (the submodule) holds the rules, menus, the stash screen and saving. It references nothing of Coop's.
@@ -31,3 +34,6 @@ and every client.
 - [ ] Our Done prefix runs before Coop's (otherwise Coop also sends the screen as a party trade).
 - [ ] Two players withdraw the last item at once: one gets it, the other gets "no longer has".
 - [ ] Settlement captured: the kingdom stash moves to public.
+- [ ] Crafted weapon: player A deposits it, player B (who never saw it) opens the warehouse and sees the right name,
+      look and stats, withdraws it, and it survives the server saving and reloading.
+- [ ] A Modular Smithing 2 weapon goes in and out unchanged (MS2 keeps its own records; ours must not clash).

@@ -76,6 +76,12 @@ public sealed class WarehouseBehavior : CampaignBehaviorBase
         CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(this, (_, _, _, _, _, _) => Sweep());
         CampaignEvents.KingdomDestroyedEvent.AddNonSerializedListener(this, _ => Sweep());
         CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, Sweep);
+        CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, _ =>
+        {
+            if (!Side.IsAuthority) return;
+            try { Rules.EnsureStoredCraftedWeapons(); }
+            catch (Exception ex) { Log.Warn("crafted weapon check failed: " + ex.GetBaseException().Message); }
+        });
     }
 
     private static void Sweep()

@@ -49,6 +49,23 @@ public sealed class WarehouseStore
 {
     private readonly Dictionary<string, Warehouse> _all = new Dictionary<string, Warehouse>(StringComparer.Ordinal);
 
+    /// <summary>Crafted weapon designs by item id (see <see cref="Crafted"/>), for every crafted weapon held anywhere.</summary>
+    public readonly Dictionary<string, string> Designs = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>The item id part of an item key (<c>itemId|modifierId</c>).</summary>
+    public static string ItemIdOf(string itemKey) { var bar = itemKey.IndexOf('|'); return bar < 0 ? itemKey : itemKey.Substring(0, bar); }
+
+    /// <summary>Designs of the crafted weapons in one warehouse.</summary>
+    public IEnumerable<string> DesignsFor(Warehouse w) =>
+        w.Items.Keys.Select(ItemIdOf).Distinct().Where(Designs.ContainsKey).Select(id => Designs[id]);
+
+    /// <summary>Forgets designs no warehouse holds any more.</summary>
+    public void PruneDesigns()
+    {
+        var held = new HashSet<string>(_all.Values.SelectMany(w => w.Items.Keys).Select(ItemIdOf), StringComparer.Ordinal);
+        foreach (var id in Designs.Keys.Where(id => !held.Contains(id)).ToList()) Designs.Remove(id);
+    }
+
     public static string Key(string settlementId, Scope scope, string ownerId) => settlementId + "|" + (int)scope + "|" + ownerId;
 
     public static bool TryParseKey(string key, out string settlementId, out Scope scope, out string ownerId)
@@ -83,10 +100,13 @@ public sealed class WarehouseStore
     //   W <key> <gold>       starts a warehouse
     //   I <itemKey> <count>  an item stack in the current warehouse
     //   L <text>             an audit line in the current warehouse
+    //   D <itemId> <design>  a crafted weapon's design (any position)
     public string Serialize()
     {
+        PruneDesigns();
         var sb = new StringBuilder();
         sb.Append("V\t1\n");
+        foreach (var d in Designs) sb.Append("D\t").Append(d.Key).Append('\t').Append(d.Value).Append('\n');
         foreach (var kv in _all)
         {
             if (kv.Value.IsEmpty && kv.Value.Log.Count == 0) continue;
@@ -113,6 +133,9 @@ public sealed class WarehouseStore
                     break;
                 case "I" when p.Length == 3 && current != null && int.TryParse(p[2], out var n):
                     current.Add(p[1], n);
+                    break;
+                case "D" when p.Length == 3:
+                    store.Designs[p[1]] = p[2];
                     break;
                 case "L" when p.Length >= 2 && current != null:
                     current.Log.Add(p[1]);
