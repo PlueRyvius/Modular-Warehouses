@@ -198,7 +198,46 @@ public static class Client
         _stashAtOpen = counts;
         _stashSettlement = reply.SettlementId;
         _stashScope = (Scope)reply.Scope;
+        _equipmentAtOpen = Equipped();
         InventoryScreenHelper.OpenScreenAsStash(roster);
+    }
+
+    // What every hero in the player's party wore when the screen opened: "heroId\tset\tslot" -> item key ("" = empty).
+    private static Dictionary<string, string>? _equipmentAtOpen;
+
+    /// <summary>The battle (set 0) and civilian (set 1) equipment of every hero in the player's party.</summary>
+    private static Dictionary<string, string> Equipped()
+    {
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        var party = MobileParty.MainParty;
+        if (party == null) return map;
+        foreach (var troop in party.MemberRoster.GetTroopRoster())
+        {
+            var hero = troop.Character?.HeroObject;
+            if (hero == null) continue;
+            for (var set = 0; set < 2; set++)
+            {
+                var equipment = set == 0 ? hero.BattleEquipment : hero.CivilianEquipment;
+                if (equipment == null) continue;
+                for (var slot = 0; slot < (int)EquipmentIndex.NumEquipmentSetSlots; slot++)
+                {
+                    var e = equipment[(EquipmentIndex)slot];
+                    map[hero.StringId + "\t" + set + "\t" + slot] = e.IsEmpty ? "" : Rules.ItemKey(e);
+                }
+            }
+        }
+        return map;
+    }
+
+    /// <summary>Equipment slots changed on the screen, as <c>heroId\tset\tslot\toldKey\tnewKey</c>.</summary>
+    private static List<string> EquipmentChanges()
+    {
+        var lines = new List<string>();
+        if (_equipmentAtOpen == null) return lines;
+        foreach (var now in Equipped())
+            if (_equipmentAtOpen.TryGetValue(now.Key, out var before) && before != now.Value)
+                lines.Add(now.Key + "\t" + before + "\t" + now.Value);
+        return lines;
     }
 
     private static Dictionary<string, int> Count(ItemRoster roster)
@@ -240,11 +279,14 @@ public static class Client
                     var delta = (now.TryGetValue(key, out var a) ? a : 0) - (_stashAtOpen.TryGetValue(key, out var b) ? b : 0);
                     if (delta != 0) lines.Add(key + "\t" + delta);
                 }
+                // Equipping or unequipping on this screen is undone by Reset too, so it travels with the transfer.
+                var equipment = EquipmentChanges();
                 __instance.Reset(true);
                 _stash = null;
                 _stashAtOpen = null;
-                if (lines.Count > 0 && _stashSettlement == Settlement.CurrentSettlement?.StringId && _stashScope == _scope)
-                    Request(new WireRequest { Op = WireRequest.Transfer, Items = lines });
+                _equipmentAtOpen = null;
+                if ((lines.Count > 0 || equipment.Count > 0) && _stashSettlement == Settlement.CurrentSettlement?.StringId && _stashScope == _scope)
+                    Request(new WireRequest { Op = WireRequest.Transfer, Items = lines, Equipment = equipment });
                 __result = true;
                 return false;
             }

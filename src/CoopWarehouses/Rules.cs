@@ -9,7 +9,11 @@ using TaleWorlds.ObjectSystem;
 
 namespace CoopWarehouses;
 
-/// <summary>A player's game -> the authority. Item lines are <c>itemKey\tdelta</c>: positive deposits, negative withdraws.</summary>
+/// <summary>
+/// A player's game -> the authority. Item lines are <c>itemKey\tdelta</c>: positive deposits, negative withdraws.
+/// Equipment lines are <c>heroId\tset\tslot\toldKey\tnewKey</c> (set 0 battle, 1 civilian; a key is empty for an
+/// empty slot): equipping or unequipping done on the same stash screen.
+/// </summary>
 public sealed class WireRequest
 {
     public const string Open = "open", Transfer = "transfer", Gold = "gold";
@@ -18,6 +22,7 @@ public sealed class WireRequest
     public string SettlementId = "";
     public int Scope;
     public List<string> Items = new List<string>();
+    public List<string> Equipment = new List<string>();
     public int GoldDelta;
     public int Seq;
 }
@@ -86,7 +91,7 @@ public static class Rules
         string? problem = req.Op switch
         {
             WireRequest.Open => null,
-            WireRequest.Transfer => Transfer(hero, party, w, req.Items),
+            WireRequest.Transfer => Transfer(hero, party, w, req.Items, req.Equipment),
             WireRequest.Gold => MoveGold(hero, w, req.GoldDelta),
             _ => "Unknown request.",
         };
@@ -110,30 +115,72 @@ public static class Rules
         reply.Designs = Store.DesignsFor(w).ToList();
     }
 
-    private static string? Transfer(Hero hero, MobileParty party, Warehouse w, List<string> lines)
+    /// <summary>
+    /// One stash screen's Done: warehouse deposits and withdrawals plus any equipping or unequipping done on the same
+    /// screen (from the warehouse, the bag, or into either). Worked out against the party's bag in order: unequipped
+    /// items go to the bag, then the warehouse moves, then equipped items leave the bag. Nothing moves unless all of it can.
+    /// </summary>
+    private static string? Transfer(Hero hero, MobileParty party, Warehouse w, List<string> lines, List<string> equipLines)
     {
-        // Decode and check everything first: nothing moves unless all of it can.
         var moves = new List<(string Key, EquipmentElement Element, int Delta)>();
         foreach (var line in lines)
         {
             var p = line.Split('\t');
             if (p.Length != 2 || !int.TryParse(p[1], out var delta) || delta == 0) return "Malformed request.";
-            if (!TryElement(p[0], out var element))
-                return p[0].StartsWith("crafted_item", StringComparison.Ordinal)
-                    ? "The server does not know this crafted weapon (" + p[0] + ")."
-                    : "Unknown item " + p[0] + ".";
+            if (!TryElement(p[0], out var element)) return UnknownItem(p[0]);
             if (!Storable(element.Item, out var why)) return why;
             if (moves.Any(m => m.Key == p[0])) return "Malformed request.";
             moves.Add((p[0], element, delta));
         }
+
+        var swaps = new List<(Hero Hero, Equipment Set, EquipmentIndex Slot, EquipmentElement Old, EquipmentElement New)>();
+        foreach (var line in equipLines)
+        {
+            var p = line.Split('\t');
+            if (p.Length != 5 || !int.TryParse(p[1], out var set) || set is < 0 or > 1 || !int.TryParse(p[2], out var slot)
+                || slot < 0 || slot >= (int)EquipmentIndex.NumEquipmentSetSlots) return "Malformed request.";
+            var who = party.MemberRoster.GetTroopRoster().Select(t => t.Character?.HeroObject).FirstOrDefault(h => h?.StringId == p[0]);
+            if (who == null || who.Clan != hero.Clan) return "Only heroes of your clan in your party can be equipped here.";
+            var equipment = set == 0 ? who.BattleEquipment : who.CivilianEquipment;
+            var index = (EquipmentIndex)slot;
+            var current = equipment[index];
+            if ((current.IsEmpty ? "" : ItemKey(current)) != p[3]) return who.Name + "'s equipment changed meanwhile; nothing was moved.";
+            var next = default(EquipmentElement);
+            if (p[4].Length > 0)
+            {
+                if (!TryElement(p[4], out next)) return UnknownItem(p[4]);
+                if (!Equipment.IsItemFitsToSlot(index, next.Item)) return Name(next) + " does not fit that slot.";
+            }
+            if (swaps.Any(s => s.Hero == who && s.Set == equipment && s.Slot == index)) return "Malformed request.";
+            swaps.Add((who, equipment, index, current, next));
+        }
+
+        // Check: the bag must never go below zero, and the warehouse must hold what is taken.
+        var bag = new Dictionary<string, int>(StringComparer.Ordinal);
+        int Bag(EquipmentElement e) { var k = ItemKey(e); return bag.TryGetValue(k, out var n) ? n : bag[k] = Have(party, e); }
+        void Move(EquipmentElement e, int delta) => bag[ItemKey(e)] = Bag(e) + delta;
+        foreach (var s in swaps) if (!s.Old.IsEmpty) Move(s.Old, +1);
         foreach (var m in moves)
         {
-            if (m.Delta > 0 && Have(party, m.Element) < m.Delta)
-                return "You no longer have " + m.Delta + " " + Name(m.Element) + ".";
             if (m.Delta < 0 && w.Count(m.Key) < -m.Delta)
                 return "The warehouse no longer has " + (-m.Delta) + " " + Name(m.Element) + ". Someone may have taken it.";
+            if (m.Delta > 0 && Bag(m.Element) < m.Delta) return "You no longer have " + m.Delta + " " + Name(m.Element) + ".";
+            Move(m.Element, -m.Delta);
         }
+        foreach (var s in swaps)
+        {
+            if (s.New.IsEmpty) continue;
+            if (Bag(s.New) < 1) return "You no longer have " + Name(s.New) + " to equip.";
+            Move(s.New, -1);
+        }
+
+        // Apply.
         var day = CampaignTime.Now.ToString();
+        foreach (var s in swaps)
+        {
+            if (!s.Old.IsEmpty) party.ItemRoster.AddToCounts(s.Old, 1);
+            s.Set.AddEquipmentToSlotWithoutAgent(s.Slot, default);
+        }
         foreach (var m in moves)
         {
             party.ItemRoster.AddToCounts(m.Element, -m.Delta);
@@ -141,8 +188,18 @@ public static class Rules
             if (m.Delta > 0 && Crafted.Describe(m.Element.Item) is { } design) Store.Designs[m.Element.Item.StringId] = design;
             w.Note($"{day}: {hero.Name} {(m.Delta > 0 ? "deposited" : "withdrew")} {Math.Abs(m.Delta)} {Name(m.Element)}");
         }
+        foreach (var s in swaps)
+        {
+            if (s.New.IsEmpty) continue;
+            party.ItemRoster.AddToCounts(s.New, -1);
+            s.Set.AddEquipmentToSlotWithoutAgent(s.Slot, s.New);
+        }
         return null;
     }
+
+    private static string UnknownItem(string key) => key.StartsWith("crafted_item", StringComparison.Ordinal)
+        ? "The server does not know this crafted weapon (" + key + ")."
+        : "Unknown item " + key + ".";
 
     private static int Have(MobileParty party, EquipmentElement element)
     {

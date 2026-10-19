@@ -18,6 +18,8 @@ public sealed class NetworkWarehouseRequest : ICommand
     [ProtoMember(5)] public int GoldDelta { get; set; }
     [ProtoMember(6)] public int Seq { get; set; }
     [ProtoMember(7)] public int ProtocolVersion { get; set; }
+    /// <summary>Equipping done on the same stash screen: heroId\tset\tslot\toldKey\tnewKey.</summary>
+    [ProtoMember(8)] public List<string>? Equipment { get; set; }
 }
 
 /// <summary>Server -> the asking client: the outcome and the warehouse as it now is.</summary>

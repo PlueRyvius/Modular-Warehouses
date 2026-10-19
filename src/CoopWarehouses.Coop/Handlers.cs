@@ -42,7 +42,7 @@ namespace Coop.Core.Server.Services.CoopWarehouses.Handlers
         {
             var req = new WireRequest
             {
-                Op = msg.Op, SettlementId = msg.SettlementId, Scope = msg.Scope, Items = msg.Items ?? new List<string>(),
+                Op = msg.Op, SettlementId = msg.SettlementId, Scope = msg.Scope, Items = msg.Items ?? new List<string>(), Equipment = msg.Equipment ?? new List<string>(),
                 GoldDelta = msg.GoldDelta, Seq = msg.Seq,
             };
             WireReply reply;
@@ -88,7 +88,7 @@ namespace Coop.Core.Client.Services.CoopWarehouses.Handlers
             broker.Subscribe<NetworkWarehouseReply>(Handle);
             Net.Send = req => network.SendAll(new NetworkWarehouseRequest
             {
-                Op = req.Op, SettlementId = req.SettlementId, Scope = req.Scope, Items = req.Items, GoldDelta = req.GoldDelta,
+                Op = req.Op, SettlementId = req.SettlementId, Scope = req.Scope, Items = req.Items, Equipment = req.Equipment, GoldDelta = req.GoldDelta,
                 Seq = req.Seq, ProtocolVersion = Protocol.Version,
             });
             Log.Info("client handler armed");
